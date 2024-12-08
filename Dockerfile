@@ -1,5 +1,5 @@
 # Etapa 1: Construção
-FROM rust:latest AS builder
+FROM rust:1.83 AS builder
 
 # Definir o diretório de trabalho
 WORKDIR /usr/src/app
