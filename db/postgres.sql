@@ -59,19 +59,19 @@ CREATE TABLE endereco (
     end_numero INT,
     end_bairro VARCHAR(100),
     cid_id INT,
-    CONSTRAINT fk_cid FOREIGN KEY (cid_id) REFERENCES cidade,
+    CONSTRAINT fk_cid FOREIGN KEY (cid_id) REFERENCES cidade
 );
 
 CREATE TABLE pessoa_endereco (
     pes_id INT,
     end_id INT,
-    CONSTRAINT fk_pes FOREIGN KEY (pes_id) REFERENCES alunos,
-    CONSTRAINT fk_end FOREIGN KEY (end_id) REFERENCES disciplinas
+    CONSTRAINT fk_pes FOREIGN KEY (pes_id) REFERENCES pessoa,
+    CONSTRAINT fk_end FOREIGN KEY (end_id) REFERENCES endereco
 );
 
 CREATE TABLE unidade_endereco (
     unid_id INT,
     end_id INT,
-    CONSTRAINT fk_unid FOREIGN KEY (unid_id) REFERENCES alunos,
-    CONSTRAINT fk_end FOREIGN KEY (end_id) REFERENCES disciplinas
+    CONSTRAINT fk_unid FOREIGN KEY (unid_id) REFERENCES pessoa,
+    CONSTRAINT fk_end FOREIGN KEY (end_id) REFERENCES endereco
 );
