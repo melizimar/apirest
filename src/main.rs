@@ -1,10 +1,15 @@
 mod util;
 
+use axum::routing::delete;
+use axum::routing::patch;
+use serde_json::json;
 use util::gen_random_name;
 use util::IdGenerator;
 
 use std::collections::HashMap;
 use std::sync::Arc;
+
+use tokio::sync::RwLock;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -56,6 +61,38 @@ impl Person {
     ) -> Self {
         Self {
             id,
+            name,
+            birth_date,
+            gender,
+            mother_name,
+            father_name,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct NewPerson {
+    #[serde(rename = "nome")]
+    name: String,
+    #[serde(rename = "nascimento", with = "date_format")]
+    birth_date: Date,
+    #[serde(rename = "gênero")]
+    gender: GenderKind,
+    #[serde(rename = "mãe")]
+    mother_name: Option<String>,
+    #[serde(rename = "pai")]
+    father_name: Option<String>,
+}
+
+impl NewPerson {
+    fn new(
+        name: String,
+        birth_date: Date,
+        gender: GenderKind,
+        mother_name: Option<String>,
+        father_name: Option<String>,
+    ) -> Self {
+        Self {
             name,
             birth_date,
             gender,
@@ -131,14 +168,14 @@ async fn main() {
     permanent_employee.insert(person5.id, person5);
     permanent_employee.insert(person6.id, person6);
 
-    let app_state = Arc::new(permanent_employee);
+    let app_state: Arc<RwLock<HashMap<usize, Person>>> = Arc::new(RwLock::new(permanent_employee));
 
     let app = Router::new()
         .route("/", get(|| async { "Api Rest" }))
-        .route("/efetivo", get(create_permanent_employee))
-        .route("/efetivo/:unidade", get(read_permanent_employee))
-        .route("/efetivo", post(update_permanent_employee))
-        .route("/efetivo", put(delete_permanent_employee))
+        .route("/efetivo", post(create_permanent_employee))
+        .route("/efetivo/:id", get(read_permanent_employee))
+        .route("/efetivo", patch(update_permanent_employee))
+        .route("/efetivo/:id", delete(delete_permanent_employee))
         // .route("/temporario", get(|| async { gen_random_name() }))
         // .route("/temporario", post(|| async { gen_random_name() }))
         // .route("/temporario", put(|| async { gen_random_name() }))
@@ -155,25 +192,56 @@ async fn main() {
 }
 
 async fn create_permanent_employee(
-    State(permanent_employee): State<Arc<HashMap<usize, Person>>>,
+    State(permanent_employee): State<Arc<RwLock<HashMap<usize, Person>>>>,
+    Json(new_employee): Json<NewPerson>,
 ) -> impl IntoResponse {
-    (StatusCode::CREATED, "Buscar -> Servidor Efetivo")
+    let id: usize = 7; // Implementar a função para gerar o ID
+    let employee = Person::new(
+        id,
+        new_employee.name,
+        new_employee.birth_date,
+        new_employee.gender,
+        new_employee.mother_name,
+        new_employee.father_name,
+    );
+
+    permanent_employee.write().await.insert(id, employee.clone());
+
+    (StatusCode::OK, Json(employee))
 }
 
 async fn read_permanent_employee(
-    State(permanent_employee): State<Arc<HashMap<usize, Person>>>,
+    State(permanent_employee): State<Arc<RwLock<HashMap<usize, Person>>>>,
     Path(employee_id): Path<usize>,
 ) -> impl IntoResponse {
-    match permanent_employee.get(&employee_id) {
-        Some(employee) => Ok(Json(employee.clone())),
-        None => Err(StatusCode::NOT_FOUND),
+    match permanent_employee.read().await.get(&employee_id) {
+        Some(employee) => Ok((StatusCode::OK, Json(employee.clone()))),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"Error": "Id não encontrado."})),
+        )),
     }
 }
 
-async fn update_permanent_employee() -> impl IntoResponse {
-    (StatusCode::OK, "Create -> Servidor Efetivo")
+async fn update_permanent_employee(
+    State(permanent_employee): State<Arc<RwLock<HashMap<usize, Person>>>>,
+) -> impl IntoResponse {
+    (StatusCode::OK, "Implementar código para realizar o UPDATE decidir entre os verbos PATCH ou PUT -> Servidor Efetivo")
 }
 
-async fn delete_permanent_employee() -> impl IntoResponse {
-    (StatusCode::NO_CONTENT, "Delete -> Servidor Efetivo")
+async fn delete_permanent_employee(
+    State(permanent_employee): State<Arc<RwLock<HashMap<usize, Person>>>>,
+    Path(employee_id): Path<usize>,
+) -> impl IntoResponse {
+    match permanent_employee.write().await.remove(&employee_id) {
+        Some(employee) => Ok((
+            StatusCode::NO_CONTENT,
+            // Json(serde_json::json!({"message": "Excluído com sucesso."})),
+        )),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({"Error": "Id não encontrado."})),
+        )),
+    }
+
 }
