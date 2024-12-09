@@ -12,6 +12,8 @@ use serde::Serialize;
 use time::macros::date;
 use time::Date;
 
+time::serde::format_description!(date_format, Date, "[day]/[month]/[year]");
+
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -33,7 +35,7 @@ struct Person {
     id: usize,
     #[serde(rename = "nome")]
     name: String,
-    #[serde(rename = "nascimento")]
+    #[serde(rename = "nascimento", with = "date_format")]
     birth_date: Date,
     #[serde(rename = "gênero")]
     gender: GenderKind,
