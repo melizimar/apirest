@@ -8,4 +8,6 @@ axum = "0.7.9"
 rand = "0.8.5"
 serde = "1.0.215"
 serde_json = "1.0.133"
+time = { version = "0.3.37", features = ["macros"] }
+time-macros = "0.2.19"
 tokio = { version = "1.42.0", features = ["full"] }

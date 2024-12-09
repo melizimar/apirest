@@ -1,4 +1,21 @@
 use rand::Rng;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+pub struct IdGenerator {
+    current: AtomicUsize,
+}
+
+impl IdGenerator {
+    pub fn new(start: usize) -> Self {
+        Self {
+            current: AtomicUsize::new(start),
+        }
+    }
+
+    pub fn next_id(&self) -> usize {
+        self.current.fetch_add(1, Ordering::Relaxed)
+    }
+}
 
 pub fn gen_random_name() -> String {
     let names = vec![
